@@ -1,0 +1,11 @@
+# Microsoft Agent Framework (latest prerelease)
+agent-framework>=1.0.0rc3
+agent-framework-orchestrations>=1.0.0rc3
+
+# Azure SDKs
+azure-search-documents>=11.7.0b2
+azure-identity>=1.21.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
