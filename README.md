@@ -1,18 +1,18 @@
 # Enterprise Deep Research Agent
 
-> **Microsoft Agent Framework**  による企業内部向けDeep Researchエージェントワークフロー
+> **Microsoft Agent Framework** — Deep Research agent workflow for enterprise internal use
 
 ---
 
-## 概要
+## Overview
 
-**Foundry IQ** (Azure AI Search のナレッジベース) と **remote SharePoint Knowledge Source** を利用して、社内ドキュメントを対象にした高品質なリサーチレポートを自動生成するシステムです。
+This system automatically generates high-quality research reports targeting internal documents using **Foundry IQ** (Azure AI Search knowledge base) and a **remote SharePoint Knowledge Source**.
 
-**MagenticBuilder** (Microsoft Agent Framework のオーケストレーション機能) を使用し、最小構成の3エージェント＋1マネージャーで合理的なワークフローを実現しています。
+It uses **MagenticBuilder** (the orchestration capability of Microsoft Agent Framework) to deliver a streamlined workflow with a minimal configuration of 3 agents + 1 manager.
 
 ---
 
-## アーキテクチャ
+## Architecture
 
 ```
 query
@@ -22,57 +22,57 @@ query
 │           MagenticBuilder (Orchestrator)                  │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │          ResearchManager (manager agent)             │  │
-│  │   - 進捗評価・次のエージェント決定                      │  │
-│  │   - タスク完了判断                                     │  │
+│  │   - Progress evaluation & next agent selection       │  │
+│  │   - Task completion determination                    │  │
 │  └──────────────┬──────────────────────────────────────┘  │
-│                 │ 指示 (MagenticBuilder が制御)             │
+│                 │ Instructions (controlled by MagenticBuilder) │
 │    ┌────────────┼────────────┐                            │
 │    ▼            ▼            ▼                            │
 │ ResearchAgent AnalystAgent ReportWriter                   │
-│ (参加者1)     (参加者2)     (参加者3)                       │
+│ (Participant 1) (Participant 2) (Participant 3)           │
 └──────────────────────────────────────────────────────────┘
   │                │               │
   ▼                ▼               ▼
-Foundry IQ       分析・統合  Markdownレポート
-Knowledge Base   情報ギャップ特定  引用付き構造化
- (remote SP)
+Foundry IQ       Analysis &    Markdown Report
+Knowledge Base   Integration   Structured with
+ (remote SP)     Gap Analysis  Citations
 ```
 
-### エージェントの役割
+### Agent Roles
 
-| エージェント | 役割 | ツール |
+| Agent | Role | Tools |
 |---|---|---|
-| **ResearchAgent** | SharePoint 等の社内ドキュメント検索・情報収集 | `search_internal_documents` |
-| **AnalystAgent** | 情報の批判的評価・ギャップ分析・統合 | なし(LLM分析) |
-| **ReportWriter** | 最終レポート執筆(Markdown形式、引用付き) | なし(LLM生成) |
-| **ResearchManager** | ワークフロー調整・完了判断(Magenticマネージャー) | なし |
+| **ResearchAgent** | Search and collect information from internal documents such as SharePoint | `search_internal_documents` |
+| **AnalystAgent** | Critical evaluation, gap analysis, and synthesis of information | None (LLM analysis) |
+| **ReportWriter** | Write the final report (Markdown format with citations) | None (LLM generation) |
+| **ResearchManager** | Workflow coordination and completion determination (Magentic manager) | None |
 
-### 検索アーキテクチャ
+### Search Architecture
 
-本実装では **Azure AI Search のナレッジベース (Foundry IQ)** 経由で **remote SharePoint Knowledge Source** を利用しています。同じナレッジソースにインデックスを追加すれば、Foundry IQ の Agentic Retrieval でその情報も取得可能です。
+This implementation uses a **remote SharePoint Knowledge Source** via the **Azure AI Search knowledge base (Foundry IQ)**. By adding additional indexes to the same knowledge source, Foundry IQ's Agentic Retrieval can also retrieve that information.
 
 ---
 
-## セットアップ
+## Setup
 
-### 1. 前提条件
+### 1. Prerequisites
 
-- Python 3.11 以上
+- Python 3.11 or higher
 - Microsoft Foundry (Agent Service v2 / Responses API)
-- Azure AI Search (Standard S1 以上を推奨 ー セマンティック検索有効化のため)
-  - ナレッジベース (Knowledge Base) が作成済みであること
-  - remote SharePoint Knowledge Source がナレッジベースに接続済みであること
-- SharePoint Online (Azure と同一の Microsoft Entra ID テナント)
-- Copilot ライセンス (remote SharePoint の利用に必要)
-- [az CLI](https://docs.microsoft.com/en-us/cli/azure/) (`az login` によるデフォルト認証)
+- Azure AI Search (Standard S1 or higher recommended — for enabling semantic search)
+  - A Knowledge Base must already be created
+  - A remote SharePoint Knowledge Source must be connected to the knowledge base
+- SharePoint Online (same Microsoft Entra ID tenant as Azure)
+- Copilot license (required for using remote SharePoint)
+- [az CLI](https://docs.microsoft.com/en-us/cli/azure/) (default authentication via `az login`)
 
-### 1.5. ナレッジソースとナレッジベースの作成
+### 1.5. Creating Knowledge Sources and Knowledge Bases
 
-本システムを利用するには、Azure AI Search 上に **remote SharePoint Knowledge Source** と **ナレッジベース (Knowledge Base)** を事前に作成する必要があります。
+To use this system, you must first create a **remote SharePoint Knowledge Source** and a **Knowledge Base** on Azure AI Search.
 
-#### (1) remote SharePoint Knowledge Source の作成
+#### (1) Creating a remote SharePoint Knowledge Source
 
-Azure portal、Python SDK、または REST API で作成できます。以下は Python SDK の例です：
+You can create one via the Azure portal, Python SDK, or REST API. The following is an example using the Python SDK:
 
 ```python
 from azure.core.credentials import AzureKeyCredential
@@ -89,11 +89,11 @@ index_client = SearchIndexClient(
 
 knowledge_source = RemoteSharePointKnowledgeSource(
     name="my-remote-sharepoint-ks",
-    description="社内 SharePoint ドキュメントのナレッジソース",
+    description="Knowledge source for internal SharePoint documents",
     remote_share_point_parameters=RemoteSharePointKnowledgeSourceParameters(
-        # KQL フィルタ (任意): 特定のファイルタイプやサイトに限定
+        # KQL filter (optional): restrict to specific file types or sites
         filter_expression='FileExtension:"docx" OR FileExtension:"pdf"',
-        # 返却するメタデータフィールド (任意)
+        # Metadata fields to return (optional)
         resource_metadata=["Author", "Title"],
     ),
 )
@@ -102,7 +102,7 @@ index_client.create_or_update_knowledge_source(knowledge_source)
 print(f"Knowledge source '{knowledge_source.name}' created.")
 ```
 
-既存インデックスをナレッジソースに追加する場合は下記を追加してください：
+To add an existing index to a knowledge source, add the following:
 
 ```python
 from azure.search.documents.indexes.models import (
@@ -110,15 +110,15 @@ from azure.search.documents.indexes.models import (
     KnowledgeSourceReference,
 )
 
-# 既存インデックスをナレッジソースとして作成
+# Create an existing index as a knowledge source
 index_ks = SearchIndexKnowledgeSource(
     name="my-index-ks",
-    description="既存の検索インデックス",
+    description="Existing search index",
     index_name="my-existing-index",
 )
 index_client.create_or_update_knowledge_source(index_ks)
 
-# ナレッジベースに両方のソースを紐付け
+# Associate both sources with the knowledge base
 knowledge_base.knowledge_sources = [
     KnowledgeSourceReference(name="my-remote-sharepoint-ks"),
     KnowledgeSourceReference(name="my-index-ks"),
@@ -126,18 +126,18 @@ knowledge_base.knowledge_sources = [
 index_client.create_or_update_knowledge_base(knowledge_base)
 ```
 
-**フィルタ式の例:**
+**Filter expression examples:**
 
-| 目的 | フィルタ式 |
+| Purpose | Filter Expression |
 |---|---|
-| 特定サイトに限定 | `Path:"https://contoso.sharepoint.com/sites/hr/Shared Documents"` |
-| サイト ID で指定 | `SiteID:"00aa00aa-bb11-cc22-dd33-44ee44ee44ee"` |
-| ファイルタイプ | `FileExtension:"docx" OR FileExtension:"pdf" OR FileExtension:"pptx"` |
-| 日付範囲 | `LastModifiedTime >= 2024-01-01 AND LastModifiedTime <= 2025-12-31` |
+| Restrict to a specific site | `Path:"https://contoso.sharepoint.com/sites/hr/Shared Documents"` |
+| Specify by site ID | `SiteID:"00aa00aa-bb11-cc22-dd33-44ee44ee44ee"` |
+| File type | `FileExtension:"docx" OR FileExtension:"pdf" OR FileExtension:"pptx"` |
+| Date range | `LastModifiedTime >= 2024-01-01 AND LastModifiedTime <= 2025-12-31` |
 
-#### (2) ナレッジベースの作成
+#### (2) Creating a Knowledge Base
 
-作成したナレッジソースをナレッジベースに紐付けます：
+Associate the created knowledge source with a knowledge base:
 
 ```python
 from azure.search.documents.indexes.models import (
@@ -169,131 +169,131 @@ index_client.create_or_update_knowledge_base(knowledge_base)
 print(f"Knowledge base '{knowledge_base.name}' created.")
 ```
 
-> **注意**: ナレッジベース名は `.env` の `AZURE_SEARCH_KNOWLEDGE_BASE_NAME` に設定してください。
+> **Note**: Set the knowledge base name in `AZURE_SEARCH_KNOWLEDGE_BASE_NAME` in your `.env` file.
 
-詳細は以下の公式ドキュメントを参照してください：
-- [remote SharePoint Knowledge Source の作成](https://learn.microsoft.com/azure/search/agentic-knowledge-source-how-to-sharepoint-remote)
-- [ナレッジベースの作成](https://learn.microsoft.com/azure/search/agentic-retrieval-how-to-create-knowledge-base)
+For more details, refer to the official documentation:
+- [Create a remote SharePoint Knowledge Source](https://learn.microsoft.com/azure/search/agentic-knowledge-source-how-to-sharepoint-remote)
+- [Create a Knowledge Base](https://learn.microsoft.com/azure/search/agentic-retrieval-how-to-create-knowledge-base)
 
-### 2. インストール
+### 2. Installation
 
 ```bash
-# 仮想環境の作成 (推奨)
+# Create a virtual environment (recommended)
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 source .venv/bin/activate  # Linux/macOS
 
-# 依存パッケージのインストール (--pre フラグが必要)
+# Install dependencies (--pre flag required)
 pip install -r requirements.txt --pre
 ```
 
-### 3. 環境変数の設定
+### 3. Configure Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` ファイルを編集して、以下の必須項目を設定してください：
+Edit the `.env` file and configure the following required fields:
 
-| 変数名 | 説明 |
+| Variable | Description |
 |---|---|
-| `AZURE_AI_PROJECT_ENDPOINT` | Azure AI Foundry の Agent Service v2 プロジェクトエンドポイント |
-| `AZURE_AI_MODEL_DEPLOYMENT_NAME` | GPT-4o などのモデルデプロイメント名 |
-| `AZURE_SEARCH_ENDPOINT` | Azure AI Search サービスエンドポイント |
-| `AZURE_SEARCH_API_KEY` | Azure AI Search API キー |
-| `AZURE_SEARCH_KNOWLEDGE_BASE_NAME` | ナレッジベース名 |
+| `AZURE_AI_PROJECT_ENDPOINT` | Azure AI Foundry Agent Service v2 project endpoint |
+| `AZURE_AI_MODEL_DEPLOYMENT_NAME` | Model deployment name (e.g., GPT-4o) |
+| `AZURE_SEARCH_ENDPOINT` | Azure AI Search service endpoint |
+| `AZURE_SEARCH_API_KEY` | Azure AI Search API key |
+| `AZURE_SEARCH_KNOWLEDGE_BASE_NAME` | Knowledge base name |
 
-オプション設定：
+Optional settings:
 
 ```env
-# SharePoint 検索の KQL フィルタ (特定サイト・ファイルタイプの絞り込み)
+# KQL filter for SharePoint search (narrow down by specific site or file type)
 AZURE_SEARCH_SHAREPOINT_FILTER=FileExtension:"docx" OR FileExtension:"pdf"
 
-# 最大結果数 (デフォルト: 10)
+# Maximum number of results (default: 10)
 AZURE_SEARCH_TOP_K=10
 
-# 最大ラウンド数 (デフォルト: 15)
+# Maximum number of rounds (default: 15)
 DEEP_RESEARCH_MAX_ROUNDS=15
 ```
 
-### 4. 認証
+### 4. Authentication
 
 ```bash
-# Azure CLI でログイン
+# Log in with Azure CLI
 az login
 ```
 
 ---
 
-## 使用方法
+## Usage
 
-### 基本的な使い方
+### Basic Usage
 
 ```bash
-python main.py --query "2025年のクラウド移行計画を要約してください"
+python main.py --query "Summarize the cloud migration plan for 2025"
 ```
 
-### 詳細オプション
+### Advanced Options
 
 ```bash
-# 出力ファイルを指定
+# Specify an output file
 python main.py --query "..." --output ./my_report.md
 
-# 計画レビューを有効化 (研究計画を承認/修正してから実行)
+# Enable plan review (review/modify the research plan before execution)
 python main.py --query "..." --plan-review
 
-# 中間出力を非表示にして最終レポートのみ表示
+# Hide intermediate output and show only the final report
 python main.py --query "..." --no-stream
 
-# デバッグログ有効化
+# Enable debug logging
 python main.py --query "..." --verbose
 ```
 
-### 出力
+### Output
 
-- `./outputs/research_<query>_<timestamp>.md` に Markdown レポートが保存されます
-- レポートには以下が含まれます：
-  - エグゼクティブサマリー
-  - 重要な発見事項 (ソース引用付き)
-  - 詳細分析
-  - 推奨事項
-  - ソース一覧
-  - 信頼度・制限事項
+- A Markdown report is saved to `./outputs/research_<query>_<timestamp>.md`
+- The report includes:
+  - Executive summary
+  - Key findings (with source citations)
+  - Detailed analysis
+  - Recommendations
+  - Source list
+  - Confidence level and limitations
 
 ---
 
-## プロジェクト構造
+## Project Structure
 
 ```
 maf-enterprise-deepresearch/
-├── main.py                    # CLI エントリーポイント
-├── requirements.txt           # 依存パッケージ
-├── .env.example               # 環境変数テンプレート
-├── README.md                  # このファイル
+├── main.py                    # CLI entry point
+├── requirements.txt           # Dependencies
+├── .env.example               # Environment variable template
+├── README.md                  # This file
 └── deep_research/
-    ├── __init__.py            # パッケージ公開 API
-    ├── config.py              # 設定ローダー
-    ├── tools.py               # 検索ツール (Azure AI Search)
-    └── workflow.py            # Magentic ワークフロー定義
+    ├── __init__.py            # Package public API
+    ├── config.py              # Configuration loader
+    ├── tools.py               # Search tools (Azure AI Search)
+    └── workflow.py            # Magentic workflow definition
 ```
 
 ---
 
-## 使用技術
+## Technologies Used
 
-| コンポーネント | パッケージ / サービス |
+| Component | Package / Service |
 |---|---|
-| LLM オーケストレーション | `agent-framework` (Microsoft Agent Framework 1.0.0rc3) |
-| Magentic パターン | `agent-framework-orchestrations` |
-| Azure OpenAI 接続 | `AzureOpenAIResponsesClient` (Agent Service v2 / Responses API) |
-| 社内ドキュメント検索 | `azure-search-documents` (Foundry IQ Knowledge Base + remote SharePoint) |
-| 認証 | `azure-identity` (AzureCliCredential / DefaultAzureCredential) |
+| LLM Orchestration | `agent-framework` (Microsoft Agent Framework 1.0.0rc3) |
+| Magentic Pattern | `agent-framework-orchestrations` |
+| Azure OpenAI Connection | `AzureOpenAIResponsesClient` (Agent Service v2 / Responses API) |
+| Internal Document Search | `azure-search-documents` (Foundry IQ Knowledge Base + remote SharePoint) |
+| Authentication | `azure-identity` (AzureCliCredential / DefaultAzureCredential) |
 
 ---
 
-## 参考資料
+## References
 
 - [Microsoft Agent Framework GitHub](https://github.com/microsoft/agent-framework)
-- [Microsoft Agent Framework ドキュメント](https://learn.microsoft.com/en-us/agent-framework/)
-- [Magentic Orchestration サンプル](https://github.com/microsoft/agent-framework/tree/main/python/samples/03-workflows/orchestrations)
-- [参考リポジトリ: kushanon/Deep-Research-Agents](https://github.com/kushanon/Deep-Research-Agents)
+- [Microsoft Agent Framework Documentation](https://learn.microsoft.com/en-us/agent-framework/)
+- [Magentic Orchestration Samples](https://github.com/microsoft/agent-framework/tree/main/python/samples/03-workflows/orchestrations)
+- [Reference Repository: kushanon/Deep-Research-Agents](https://github.com/kushanon/Deep-Research-Agents)
